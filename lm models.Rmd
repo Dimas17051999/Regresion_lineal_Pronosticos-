@@ -1,0 +1,965 @@
+---
+title: "Equipo 4"
+author: ''
+date: "18/1/2023"
+output:
+  html_document: default
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+<center>
+![](descarga.png)
+</center>
+
+## Equipo conformado por: 
+
+-  Deister Navarro Derek 
+
+-  Dimas Ramirez Luis Daniel 
+
+- Hernandez Molina Marlene Zoobeida 
+
+- Hernandez Silva Hatziri 
+
+- Krauss Guzman Alexis 
+
+- Ortiz Vega Miroslava Guadalupe
+
+<br></br>
+
+Este conjunto de datos proporciona datos desde el 1 de enero de 2013 hasta el 24 de abril de 2017 en la ciudad de Delhi, India. 
+
+La  **variables** son :la temperatura media, la humedad, la presión media.
+
+
+
+
+<br></br>
+
+
+<style type="text/css">
+.tg  {border-collapse:collapse;border-color:#ccc;border-spacing:0;}
+.tg td{background-color:#fff;border-color:#ccc;border-style:solid;border-width:1px;color:#333;
+  font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg th{background-color:#f0f0f0;border-color:#ccc;border-style:solid;border-width:1px;color:#333;
+  font-family:Arial, sans-serif;font-size:14px;font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-buh4{background-color:#f9f9f9;text-align:left;vertical-align:top}
+.tg .tg-0pky{border-color:inherit;text-align:left;vertical-align:top}
+.tg .tg-btxf{background-color:#f9f9f9;border-color:inherit;text-align:left;vertical-align:top}
+</style>
+<table class="tg">
+<thead>
+  <tr>
+    <th class="tg-0pky">Variable </th>
+    <th class="tg-0pky"></th>
+    <th class="tg-0pky"></th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td class="tg-btxf">Temperatura media.</td>
+    <td class="tg-btxf">Promediada a partir de múltiples intervalos de 3 horas en un día.</td>
+    <td class="tg-btxf">Variable dependiente</td>
+  </tr>
+  <tr>
+    <td class="tg-0pky">Humedad</td>
+    <td class="tg-0pky">Gramos de vapor de agua por metro cúbico de volumen de aire</td>
+    <td class="tg-0pky">Variable explicativa.</td>
+  </tr>
+  <tr>
+    <td class="tg-buh4">Presión media</td>
+    <td class="tg-buh4">Medida en atm(atmósfera estándar)</td>
+    <td class="tg-buh4">Variable explicativa.</td>
+      </tr>
+  <tr>
+    <td class="tg-0pky">Velocidad del viento</td>
+    <td class="tg-0pky">KM/H</td>
+    <td class="tg-0pky">Variable explicativa.</td>
+  </tr>
+</tbody>
+</table>
+
+<br></br>
+
+
+```{r}
+library(readr)
+library(readxl)
+data <- read_csv("DailyDelhiClimateTrain.csv")
+f=data.frame(data)
+  
+DT::datatable(f, editable = 'cell-border stripe')
+```
+
+<br></br>
+
+
+# Modelos lineales 
+
+##  Modelo LIN-LIN
+```{r}
+
+modelo_linlin <- lm( data$meantemp~ data$humidity + data$meanpressure + data$wind_speed)
+modelo_linlin
+summary(modelo_linlin)
+```
+
+Interpretación: 
+
+-  Si la humedad, la presiony y la velocidad del viento fuera 0, la temperatura promedio seria 39.0 grados C.
+
+- Si la unidad de humedad aumenta en uno, la temp cae en 0.23 
+
+- Si la unidad de presion aumenta en uno, la temp cae en 0.0014
+
+- Si la unidad de la velocidad del viento aumenta en uno, la temp aumenta en 0.17
+
+Segun el $r^2$ ajustado; el 33.84% del comportamiento de la temperatura es descrita por nuestro modelo.El otro 66.16% se debe al error.  
+
+
+```{r}
+anova_linlin <- aov(modelo_linlin)
+summary(anova_linlin)
+```
+
+De la tabla ANOVA podemos observar que que la variable presión es menos significativa estadisticamente. Por lo tanto con una confianza del 92.4% podemos decir que existe suficiente evidencia estadistica para rechazar la hipotesis de que la presion describe el comporamiento de la temperatura. 
+
+
+```{r}
+library(car)
+avPlots(modelo_linlin)
+```
+
+
+```{r}
+plot(modelo_linlin$residuals, type = "l", col= "red", main="Modelo lin-lin", xlab="Periodo", ylab="Errores")
+```
+```{r}
+prom <- mean(modelo_linlin$residuals)
+```
+
+Existe autocorrelación estacionaria porque la media no es nula (es de `r prom`) pero sí constante y tiene varianza constante
+
+## Modelo LOG-LOG
+
+Para este caso no utilizamos velocidad del viento porque contiene ceros y al usar la funcion log( ) nos producira un error. 
+
+```{r}
+model_loglog <- lm( log(data$meantemp)~ log(data$humidity) + log(data$meanpressure) )
+
+
+model_loglog 
+exp(model_loglog$coefficients)
+summary(model_loglog)
+```
+
+Interpretación: 
+
+- Si la humedad y la presion fuera 0, la humedad crece a una taza de 500.82%.
+
+- Si la humedad aumenta en 1% la temp se reduce en 54.59%
+
+- Si la presion  aumenta en 1% la temp se reduce en 6.026%
+
+En este caso no se utilizo la velocidad del viento debido a que tiene valores nulos los cuales no podemos modelarlos con la funcion de logaritmo. 
+
+ $r^2$ Ajustado: El 27.73% del comportamiento de nuesrta varialbe dependiente es descrita por el modelo. 
+
+```{r}
+anova_loglog <- aov(model_loglog)
+summary(anova_loglog)
+```
+De la tabla anova podemos afirmar que la presión no es estadisticamente significativa par a nuestro modelo 
+
+```{r}
+avPlots(model_loglog)
+```
+```{r}
+plot(model_loglog$residuals, type = "l", col= "red", main="Modelo log-log", xlab="Periodo", ylab="Errores")
+```
+```{r}
+prom <- mean(model_loglog$residuals)
+```
+
+Existe autocorrelación estacionaria porque la media no es nula (es de `r prom`) pero sí constante y tiene varianza constante
+
+## Modelo LOG-LIN
+```{r}
+model_loglin <- lm( log(data$meantemp)~ data$humidity+ data$meanpressure + data$wind_speed) 
+model_loglin 
+exp(model_loglin$coefficients)
+summary(model_loglin)
+```
+
+Interpretación: 
+
+- Si la humedad, la velocidad del viento y la presion fuera 0, la humedad crece a una taza de 39%. 
+
+- Si la humedad aumenta en 1% la temp se reduce en 0.103
+
+- Si la presion  aumenta en 1% la temp se reduce en 0.005843
+
+- Si la velocidad del viento aumenta en 1% la temp aumenta en 0.006988
+
+ $r^2$ Ajustado: El comportamiendo de la temperatura es descrito en un 31.1% por nuestro modelo. 
+
+```{r}
+a_loglin <- aov(model_loglin)
+summary(a_loglin)
+```
+
+En este caso que volvemos a incluir la variable de velocidad del viento, confirmamos nuevamente que esta variable es más significativa que la variable presión. 
+
+```{r}
+avPlots(model_loglin)
+```
+```{r}
+plot(model_loglin$residuals, type = "l", col= "red", main="Modelo log-lin", xlab="Periodo", ylab="Errores")
+```
+```{r}
+prom <- mean(model_loglin$residuals)
+```
+
+Existe autocorrelación estacionaria porque la media no es nula (es de `r prom`) pero sí constante y tiene varianza constante
+
+
+
+## Modelo LIN-LIN
+
+LIN-LIN hasta ahora, teniendo en cuenta la significancia de nuestras variables, el estadistico F, p-values y $r^2$ ajustado; es nuestro mejor modelo.
+
+```{r}
+
+model_lin_lin1 <- lm( data$meantemp~ data$humidity + data$meanpressure + data$wind_speed)
+model_lin_lin1
+summary(model_lin_lin1)
+```
+
+
+
+# Transformación 
+
+## Transformación a serie de tiempo
+
+```{r}
+library(lubridate)
+tsTemp<-ts(data$meantemp,start=decimal_date(as.Date("2013-01-01")),frequency=365)
+tsHumi<-ts(data$humidity,start=decimal_date(as.Date("2013-01-01")),frequency=365)
+tsPress<-ts(data$meanpressure,start=decimal_date(as.Date("2013-01-01")),frequency=365)
+tsWind<-ts(data$wind_speed,start=decimal_date(as.Date("2013-01-01")),frequency=365)
+
+
+par(mfrow=c(2,2))
+plot(tsTemp, main= "Temperature Time Series")
+plot(tsHumi, main= "Humidity Time Series")
+plot(tsPress, main= "Pression Time Series")
+plot(tsWind, main= "Wind Velocity Time Series")
+```
+
+
+## Primeras Diferencias
+```{r}
+library(forecast)
+ndiffs(tsTemp) #Este comando nos dice cuantas diferencias necesita mi serie de tiempo no estacionaria en una serie de tiempo estacionaria 
+
+difTemp<-diff(tsTemp,diff=1,lag=1)   #Dif es para el numero de diferencias que queremos respecto a nuestro dato x
+difHumi<-diff(tsHumi,diff=1,lag=1) #H es el numero de rezagos 
+difPress<-diff(tsPress,diff=1,lag=1)
+difWind<-diff(tsWind,diff=1,lag=1)
+
+ndiffs(difTemp) #No se necesita más diferencias proque nuestra serie de tiempo tsTemp ya es estacionaria 
+
+par(mfrow=c(2,2))
+plot(difTemp, main= "First Difference \n Temperature Time Series")
+plot(difHumi, main= "First Difference \n Humidity Time Series")
+plot(difPress, main= "First Difference \n Pression Time Series")
+plot(difWind, main= "First Difference \n Wind Velocity Time Series")
+
+model_lin_lin_diff<-lm(difTemp~ difHumi+difPress+difWind)
+model_lin_lin_diff$coefficients
+summary(model_lin_lin_diff)
+```
+
+Aunque este modelo de primeras diferencias explica mejor el compartamiento de la temperatura ($r2$ = 43.9%) podemos ver que ni el intercpeto ni la presion son estadisticamente significativos, por lo que nuestro modelo lin lin original sigue siendo mejor. 
+
+```{r}
+avPlots(model_lin_lin_diff)
+```
+
+```{r}
+plot(model_lin_lin_diff$residuals, type = "l", col= "red", main="Modelo lin-lin Primeras diferencias", xlab="Periodo", ylab="Errores")
+```
+
+No existe autocorrelación porque la media es nula y tiene varianza constante
+
+
+Comparando los modelos Lin Lin de los datos originales con el modelo que contiene la primera diferencia, notamos que el intercepto del modelo de la diferencia no es estadisticamente significativo ademas de que el error cuadrado ajustado es mayor. Por lo tanto es mejor el modelo LIN LIN de los datos origniales. 
+
+## Comparación de errores
+```{r}
+
+par(mfrow= c(1,2))
+plot(model_lin_lin1$residuals, type = "l", col= "red", main="Errores del Modelo lin-lin", xlab="Periodo", ylab="Errores")
+plot(model_lin_lin_diff$residuals, type = "l", col= "red", main="Errores del Modelo lin-lin \n Primera diferencia", xlab="Periodo", ylab="Errores")
+```
+
+Una vez realizada la primera diferencia para nuestros datos orginiales, observamos que el modelo LIN-LIN genera errores estables 
+
+# PRONOSTICOS 
+
+El modelo ARMA(p,q) se usa para representar series que son estacionarias sin requerir diferenciancion 
+
+Cuando la serie esta diferenciada, se utiliza el modelo ARIMA(p,d,q) donde $d$ es el numero de diferencia. El modelo ARIMA toma en cuenta tendencia pero no componente estacional 
+
+El modelo SARIMA(p,d,q)[P,D,Q] toma en cuenta tendencia y tambien componentes estacionales. 
+
+Se utilizan las graficas de autocorrelaciones y autocorrelaciones parciales para determinar los valores p,d,q,P,D,Q. 
+
+Las autocorrelaciones son estimadores de los coeficientes de la parte AR, mientras que, las autocorrelaciones parciales son estimadores de los coeficientes de la parte MA
+
+ACF: Nos dice el numero de medias moviles 
+
+Partial ACF: Nos dice el numero de autoregresivos.Cuando Solo la primera autocorrelación parcial es estadísticamente no nula porque esta fuera de los limites de confianza;  define el valor de p, que es 1. Las autocorrelaciones parciales definen el valor de p cuando se caen abruptamente á cero de un período a otro. En este caso, el valor de p es igual al rezago anterior al que se vuelven nulas
+
+
+
+## Autocorrelacion y correlación parcial para nuestra serie de tiempo de Temperatura original
+
+```{r}
+plot(tsTemp , main= "Serie de tiempo de Temperatura")
+
+acf(tsTemp, lag.max = NULL, type = c('correlation'), plot = TRUE)
+
+acf(tsTemp, lag.max = NULL, type = c('partial'), plot = TRUE)
+```
+
+Para poder hacer pronosticos, necesitamos que nuestra serie de tiempo se esstacionaria. 
+
+Para que una serie de tiempo sea estacionaria requerimos que nuestra media (idealmente nula) y varianza sean constantes a lo largo del tiempo y que no haya tendencia en los datos, además de que nuestra gráfica de autocorrelación indique lo mismo. 
+
+
+## Autocorrelacion y correlación parcial para nuestra serie de tiempo diferenciada de Temperatura 
+
+```{r}
+plot(difTemp, main= "Serie de tiempo estacionaria de \n la primera diferencia de Temperatura")
+
+acf(difTemp, lag.max = NULL, type = c('correlation'), plot = TRUE)
+
+acf(difTemp, lag.max = NULL, type = c('partial'), plot = TRUE)
+```
+
+Del grafico de esta serie de tiempo observamos que es estacionaria al tener media nula y varianza constante. Lo logramos al aplicar la primera diferencia de los datos. 
+
+
+## Comparación entre series originales y series diferenciadas 
+
+```{r}
+
+par(mfrow= c(2,3), mar = c(4,4,4,1))
+plot(tsTemp, main="Serie no estacionaria")
+acf(tsTemp, lag.max = NULL, type = c('correlation'), plot = TRUE)
+acf(tsTemp, lag.max = NULL, type = c('partial'), plot = TRUE)
+
+plot(difTemp, main="Serie estacionaria")
+acf(difTemp, lag.max = NULL, type = c('correlation'), plot = TRUE)
+acf(difTemp, lag.max = NULL, type = c('partial'), plot = TRUE)
+```
+
+Con la primera diferencia nuestra serie ya es estacionaria. 
+
+## Aplicando el modelo ARIMA para encontrar parametros. 
+
+```{r}
+modelo_ARIMA <- auto.arima(data$meantemp,stepwise=FALSE,approximation= FALSE, trace = T, nmodels = 10)
+#¿Por que con mi serie de tiempo truena pero con los datos normales no?
+
+summary(modelo_ARIMA)
+```
+
+
+Creando el modelo : 
+
+```{r}
+modelo_ar1 <- arima(data$meantemp, order = c(2,1,2), include.mean = FALSE, method = c('CSS-ML'))
+modelo_ar1
+tsdiag(modelo_ar1)
+```
+
+Ljung Box: todos los p values son mayores a 0.05 por lo tanto sí hay ruido blanco y nos evidencia que nuestra modelo no es malo y se ajusta bien. Si alguno o todos los p values fueran menores a 0.05 no habria ruido blanco y nuestro modelo no se ajusta bien. 
+
+```{r}
+
+errores <- residuals(modelo_ar1)
+plot(errores)
+```
+
+
+## Pronostico 
+
+```{r}
+pronostico <- forecast(modelo_ar1, h=10)
+autoplot(pronostico)
+predict(pronostico, h=10)
+```
+
+
+## Promedio Movil simple con N = 10
+```{r}
+library(DescTools)
+library(pracma)
+library(gridExtra)
+library(data.table)
+library(smooth)
+#MAE (y, forecast y)
+m <- mean(tsTemp)
+ts.plot(tsTemp, m, col= c("black","blue" ), lty = c(1,2), ylab="Temperatura",xlab="Tiempo",main=" Temperatura")
+legend("bottomright",c("Temperatura","mean(Temperatura)"),lty=c(1,2),col=c("black","blue" ))
+
+sma <- movavg(tsTemp, 10, type="s")
+
+Prom_simp<-mean(tsTemp)
+mae_PromSimp<-MAE(tsTemp, sma)
+mape_PromSimp<-MAPE(tsTemp, sma)
+smape_PromSimp<-SMAPE(tsTemp, sma)
+mse_PromSimp<-MSE(tsTemp, sma)
+rmse_PromSimp<-RMSE(tsTemp, sma)
+medidas_PromSimp<-matrix(c(mae_PromSimp,mape_PromSimp,smape_PromSimp,mse_PromSimp,rmse_PromSimp))
+rownames(medidas_PromSimp)<-c("MAE","MAPE","SMAPE","MSE","RMSE")
+colnames(medidas_PromSimp)<-c("Prom Movil Simple")
+df_medidas_PromSimp<-as.data.frame(medidas_PromSimp)
+tab_medidas_PromSimp<-as.data.table(df_medidas_PromSimp,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromSimp)<-c("Medida","Promedio Movil Simple")
+ftab_medidas_PromSimp<-format(tab_medidas_PromSimp, digits=5,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromSimp,theme=tem))
+
+
+f<-rep(0,40)
+for (t in 3:40) f[t]<-(0.75)*tsTemp[t-1]+(0.25)*tsTemp[t-2]
+y_ts<-ts(tsTemp[0:40],start=1,frequency = 1)
+f_ts<-ts(f,start=1,frequency = 1)
+cbind(y_ts,f_ts)
+ts.plot(y_ts,f_ts,xlab=NULL,ylab=NULL, main = "Promedio Movil Simple",lty=c(1:2),col=c(1,3))
+legend(x="bottom",legend=c("Obs","PromMovSimple"),col=c(1,3),lty=c(1,2))
+
+```
+
+## Promedio movil ponderado W
+
+```{r}
+fw <- movavg(tsTemp, 10, type = "w")
+
+mae_PromW<-MAE(tsTemp, fw)
+mape_PromW<-MAPE(tsTemp, fw)
+smape_PromW<-SMAPE(tsTemp, fw)
+mse_PromW<-MSE(tsTemp, fw)
+rmse_PromW<-RMSE(tsTemp, fw)
+medidas_PromW<-matrix(c(mae_PromW,mape_PromW,smape_PromW,mse_PromW,rmse_PromW))
+rownames(medidas_PromW)<-c("MAE","MAPE","SMAPE","MSE","RMSE")
+colnames(medidas_PromW)<-c("Ponderada W")
+df_medidas_PromW<-as.data.frame(medidas_PromW)
+tab_medidas_PromW<-as.data.table(df_medidas_PromW,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromW)<-c("Medida","Promedio Ponderado W")
+ftab_medidas_PromW<-format(tab_medidas_PromW, digits=5,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromW,theme=tem))
+
+
+fwt<-rep(0,40)
+for(t in 2:40) fwt[t]<-fw[t-1]
+for(t in 1) fwt[t]<-NA
+fw_ts<-rep(0,19)
+fw_ts<-ts(fwt,start=1,frequency=1)
+ts.plot(tsTemp[0:40],fw_ts,xlab=NULL,ylab=NULL, main = "Promedio Móvil w",lty=c(1:2),col=c(1,2))
+legend(x="bottomright",legend=c("Obs","PromMovW"),col=c(1,2),lty=c(1,2))
+
+```
+
+## Promedio ponderada e 
+
+```{r}
+e <- movavg(tsTemp, 10, type = "e")
+
+mae_PromE<-MAE(tsTemp, e)
+mape_PromE<-MAPE(tsTemp, e)
+smape_PromE<-SMAPE(tsTemp, e)
+mse_PromE<-MSE(tsTemp, e)
+rmse_PromE<-RMSE(tsTemp, e)
+medidas_PromE<-matrix(c(mae_PromE,mape_PromE,smape_PromE,mse_PromE,rmse_PromE))
+rownames(medidas_PromE)<-c("MAE","MAPE","SMAPE","MSE","RMSE")
+colnames(medidas_PromE)<-c("Ponderada")
+df_medidas_PromE<-as.data.frame(medidas_PromE)
+tab_medidas_PromE<-as.data.table(df_medidas_PromE,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromE)<-c("Medida","Promedio Ponderado e")
+ftab_medidas_PromE<-format(tab_medidas_PromE, digits=5,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromE,theme=tem))
+
+fwt<-rep(0,40)
+for(t in 2:40) fwt[t]<-e[t-1]
+for(t in 1) fwt[t]<-NA
+fw_ts<-rep(0,19)
+fw_ts<-ts(fwt,start=1,frequency=1)
+ts.plot(tsTemp[0:40],fw_ts,xlab=NULL,ylab=NULL, main = "Promedio Móvil e",lty=c(1:2),col=c(1,2))
+legend(x="bottomright",legend=c("Obs","PromMove"),col=c(1,2),lty=c(1,2))
+```
+
+
+## Promedio  exponencial r
+
+```{r}
+r <- movavg(tsTemp, 10, type = "r")
+
+mae_PromR<-MAE(tsTemp, r)
+mape_PromR<-MAPE(tsTemp, r)
+smape_PromR<-SMAPE(tsTemp, r)
+mse_PromR<-MSE(tsTemp, r)
+rmse_PromR<-RMSE(tsTemp, r)
+medidas_PromR<-matrix(c(mae_PromR,mape_PromR,smape_PromR,mse_PromR,rmse_PromR))
+rownames(medidas_PromR)<-c("MAE","MAPE","SMAPE","MSE","RMSE")
+colnames(medidas_PromR)<-c("Ponderada")
+df_medidas_PromR<-as.data.frame(medidas_PromR)
+tab_medidas_PromR<-as.data.table(df_medidas_PromR,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromR)<-c("Medida","Promedio movil exp r")
+ftab_medidas_PromR<-format(tab_medidas_PromR, digits=5,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromR,theme=tem))
+
+fwt<-rep(0,40)
+for(t in 2:40) fwt[t]<-r[t-1]
+for(t in 1) fwt[t]<-NA
+fw_ts<-rep(0,19)
+fw_ts<-ts(fwt,start=1,frequency=1)
+ts.plot(tsTemp[0:40],fw_ts,xlab=NULL,ylab=NULL, main = "Promedio Móvil R",lty=c(1:2),col=c(1,2))
+legend(x="bottomright",legend=c("Obs","PromMovR"),col=c(1,2),lty=c(1,2))
+```
+
+# Promedo triangular 
+
+```{r}
+tr <- movavg(tsTemp, 10, type = "t")
+
+mae_PromTR<-MAE(tsTemp, tr)
+mape_PromTR<-MAPE(tsTemp, tr)
+smape_PromTR<-SMAPE(tsTemp, tr)
+mse_PromTR<-MSE(tsTemp, tr)
+rmse_PromTR<-RMSE(tsTemp, tr)
+medidas_PromTR<-matrix(c(mae_PromTR,mape_PromTR,smape_PromTR,mse_PromTR,rmse_PromTR))
+rownames(medidas_PromTR)<-c("MAE","MAPE","SMAPE","MSE","RMSE")
+colnames(medidas_PromTR)<-c("Ponderada")
+df_medidas_PromTR<-as.data.frame(medidas_PromTR)
+tab_medidas_PromTR<-as.data.table(df_medidas_PromTR,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromTR)<-c("Medida","Promedio triangular")
+ftab_medidas_PromTR<-format(tab_medidas_PromTR, digits=5,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromTR,theme=tem))
+
+fwt<-rep(0,40)
+for(t in 2:40) fwt[t]<-tr[t-1]
+for(t in 1) fwt[t]<-NA
+fw_ts<-rep(0,19)
+fw_ts<-ts(fwt,start=1,frequency=1)
+ts.plot(tsTemp[0:40],fw_ts,xlab=NULL,ylab=NULL, main = "Promedio Triangular",lty=c(1:2),col=c(1,2))
+legend(x="bottomright",legend=c("Obs","PromTriangular"),col=c(1,2),lty=c(1,2))
+```
+
+
+# Promedio modificado
+```{r}
+m <- movavg(tsTemp, 10, type = "m")
+
+mae_PromM<-MAE(tsTemp, m)
+mape_PromM<-MAPE(tsTemp, m)
+smape_PromM<-SMAPE(tsTemp, m)
+mse_PromM<-MSE(tsTemp, m)
+rmse_PromM<-RMSE(tsTemp, m)
+medidas_PromM<-matrix(c(mae_PromM,mape_PromM,smape_PromM,mse_PromM,rmse_PromM))
+rownames(medidas_PromM)<-c("MAE","MAPE","SMAPE","MSE","RMSE")
+colnames(medidas_PromM)<-c("Ponderada")
+df_medidas_PromM<-as.data.frame(medidas_PromM)
+tab_medidas_PromM<-as.data.table(df_medidas_PromM,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromM)<-c("Medida","Promedio modificado")
+ftab_medidas_PromM<-format(tab_medidas_PromM, digits=5,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromM,theme=tem))
+
+fwt<-rep(0,40)
+for(t in 2:40) fwt[t]<-m[t-1]
+for(t in 1) fwt[t]<-NA
+fw_ts<-rep(0,19)
+fw_ts<-ts(fwt,start=1,frequency=1)
+ts.plot(tsTemp[0:40],fw_ts,xlab=NULL,ylab=NULL, main = "Promedio Modificado",lty=c(1:2),col=c(1,2))
+legend(x="bottomright",legend=c("Obs","PromMod"),col=c(1,2),lty=c(1,2))
+```
+
+Segun el comparativo de errores, el mejor pronostico nos lo va a dar el __Promedio Ponderado W__
+
+```{r}
+fw <- movavg(tsTemp, 10, type = "w")
+
+mae_PromW<-MAE(tsTemp, fw)
+mape_PromW<-MAPE(tsTemp, fw)
+smape_PromW<-SMAPE(tsTemp, fw)
+mse_PromW<-MSE(tsTemp, fw)
+rmse_PromW<-RMSE(tsTemp, fw)
+medidas_PromW<-matrix(c(mae_PromW,mape_PromW,smape_PromW,mse_PromW,rmse_PromW))
+rownames(medidas_PromW)<-c("MAE","MAPE","SMAPE","MSE","RMSE")
+colnames(medidas_PromW)<-c("Ponderada W")
+df_medidas_PromW<-as.data.frame(medidas_PromW)
+tab_medidas_PromW<-as.data.table(df_medidas_PromW,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromW)<-c("Medida","Promedio Ponderado W")
+ftab_medidas_PromW<-format(tab_medidas_PromW, digits=5,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromW,theme=tem))
+
+
+fwt<-rep(0,40)
+for(t in 2:40) fwt[t]<-fw[t-1]
+for(t in 1) fwt[t]<-NA
+fw_ts<-rep(0,19)
+fw_ts<-ts(fwt,start=1,frequency=1)
+ts.plot(tsTemp[0:40],fw_ts,xlab=NULL,ylab=NULL, main = "Promedio Móvil w",lty=c(1:2),col=c(1,2))
+legend(x="bottomright",legend=c("Obs","PromMovW"),col=c(1,2),lty=c(1,2))
+
+```
+
+## Suavizamiento exponencial simple 
+
+### alpha = 0.1
+
+```{r}
+library(fpp2)
+
+est1<-ses(tsTemp, h = 2, level = c(95,95), initial = c("simple"), alpha = 0.1)
+fse1<-est1$fitted
+fse_ts1<-ts(fse1,start=1,frequency=1)
+fset_ts1<-rep(0,20)
+for(t in 3:20) fset_ts1[t]<-fse_ts1[t-2]
+for(t in 1:2) fset_ts1[t]<-NA
+yt1<-rep(0,20)
+for(t in 1:18) yt1[t]<-tsTemp[t]
+for(t in 19:20) yt1[t]<-NA
+yt_ts1<-ts(yt1,start=1,frequency=1)
+ts.plot(yt_ts1,fset_ts1,xlab=NULL,ylab=NULL, main = "Serie Suavizada Exponencialmente con alpha = 0.1",lty=c(1:2),col=c(1,2))
+legend(x="bottomright",legend=c("Obs","Suavizada"),col=c(1,2),lty=c(1,2))
+
+
+
+mae_PromSS<-MAE(tsTemp, fse1)
+mape_PromSS<-MAPE(tsTemp, fse1)
+smape_PromSS<-SMAPE(tsTemp, fse1)
+mse_PromSS<-MSE(tsTemp, fse1)
+rmse_PromSS<-RMSE(tsTemp, fse1)
+medidas_PromSS<-matrix(c(mae_PromSS,mape_PromSS,smape_PromSS,mse_PromSS,rmse_PromSS))
+rownames(medidas_PromSS)<-c("MAE","MAPE","SMAPE","MSE","RMSE")
+colnames(medidas_PromSS)<-c("Suavizamiento Simple")
+df_medidas_PromSS<-as.data.frame(medidas_PromSS)
+tab_medidas_PromSS<-as.data.table(df_medidas_PromSS,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromSS)<-c("Medida","Suavizamiento Simple")
+ftab_medidas_PromSS<-format(tab_medidas_PromSS, digits=5,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromSS,theme=tem))
+
+```
+
+
+### $\alpha = 0.5$
+
+```{r}
+est5<-ses(tsTemp, h = 2, level = c(95,95), initial = c("simple"), alpha = 0.5)
+fse5<-est5$fitted
+fse_ts5<-ts(fse5,start=1,frequency=1)
+fset_ts5<-rep(0,20)
+for(t in 3:20) fset_ts5[t]<-fse_ts5[t-2]
+for(t in 1:2) fset_ts5[t]<-NA
+yt5<-rep(0,20)
+for(t in 1:18) yt5[t]<-tsTemp[t]
+for(t in 19:20) yt5[t]<-NA
+yt_ts5<-ts(yt5,start=1,frequency=1)
+ts.plot(yt_ts5,fset_ts5,xlab=NULL,ylab=NULL, main = "Serie Suavizada Exponencialmente con alpha = 0.5",lty=c(1:2),col=c(1,2))
+legend(x="bottomright",legend=c("Obs","Suavizada"),col=c(1,2),lty=c(1,2))
+
+mae_PromSS5<-MAE(tsTemp, fse5)
+mape_PromSS5<-MAPE(tsTemp, fse5)
+smape_PromSS5<-SMAPE(tsTemp, fse5)
+mse_PromSS5<-MSE(tsTemp, fse5)
+rmse_PromSS5<-RMSE(tsTemp, fse5)
+medidas_PromSS5<-matrix(c(mae_PromSS5,mape_PromSS5,smape_PromSS5,mse_PromSS5,rmse_PromSS5))
+rownames(medidas_PromSS5)<-c("MAE","MAPE","SMAPE","MSE","RMSE")
+colnames(medidas_PromSS5)<-c("Suavizamiento Simple")
+df_medidas_PromSS5<-as.data.frame(medidas_PromSS5)
+tab_medidas_PromSS5<-as.data.table(df_medidas_PromSS5,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromSS5)<-c("Medida","Suavizamiento Simple")
+ftab_medidas_PromSS5<-format(tab_medidas_PromSS5, digits=5,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromSS5,theme=tem))
+```
+
+
+### $\alpha = 0.8$
+```{r}
+est8<-ses(tsTemp, h = 2, level = c(95,95), initial = c("simple"), alpha = 0.8)
+fse8<-est8$fitted
+fse_ts8<-ts(fse8,start=1,frequency=1)
+fset_ts8<-rep(0,20)
+for(t in 3:20) fset_ts8[t]<-fse_ts8[t-2]
+for(t in 1:2) fset_ts8[t]<-NA
+yt8<-rep(0,20)
+for(t in 1:18) yt8[t]<-tsTemp[t]
+for(t in 19:20) yt8[t]<-NA
+yt_ts8<-ts(yt8,start=1,frequency=1)
+ts.plot(yt_ts8,fset_ts8,xlab=NULL,ylab=NULL, main = "Serie Suavizada Exponencialmente con alpha = 0.8",lty=c(1:2),col=c(1,2))
+legend(x="bottomright",legend=c("Obs","Suavizada"),col=c(1,2),lty=c(1,2))
+
+mae_PromSS8<-MAE(tsTemp, fse8)
+mape_PromSS8<-MAPE(tsTemp, fse8)
+smape_PromSS8<-SMAPE(tsTemp, fse8)
+mse_PromSS8<-MSE(tsTemp, fse8)
+rmse_PromSS8<-RMSE(tsTemp, fse8)
+medidas_PromSS8<-matrix(c(mae_PromSS8,mape_PromSS8,smape_PromSS8,mse_PromSS8,rmse_PromSS8))
+rownames(medidas_PromSS8)<-c("MAE","MAPE","SMAPE","MSE","RMSE")
+colnames(medidas_PromSS8)<-c("Suavizamiento Simple")
+df_medidas_PromSS8<-as.data.frame(medidas_PromSS8)
+tab_medidas_PromSS8<-as.data.table(df_medidas_PromSS8,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromSS8)<-c("Medida","Suavizamiento Simple")
+ftab_medidas_PromSS8<-format(tab_medidas_PromSS8, digits=5,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromSS8,theme=tem))
+```
+
+## Suavizamiento exponencial ajustado por la tendencia (Brown)
+
+### $\alpha = 0.1$
+```{r}
+estr<-ses(tsTemp, h = 2, level = c(95, 95), initial = c("simple"),  alpha = 0.1, exponential = TRUE, beta = NULL)
+fser<-estr$fitted
+fser_ts<-ts(fser,start=1,frequency=1)
+fsetr_ts<-rep(0,20)
+for(t in 3:20) fsetr_ts[t]<-fser_ts[t-2]
+for(t in 1:2) fsetr_ts[t]<-NA
+yt<-rep(0,20)
+for(t in 1:18) yt[t]<- tsTemp[t]
+for(t in 19:20) yt[t]<-NA
+yt_ts<-ts(yt,start=1,frequency=1)
+ts.plot(yt_ts,fsetr_ts,xlab=NULL,ylab=NULL, main = "Serie Suavizada Exponencialmente con \n Ajuste de Tendencia y alpha = 0.1",lty=c(1:2),col=c(1,2))
+legend(x="bottomright",legend=c("Obs","Suavizada"),col=c(1,2),lty=c(1,2))
+
+
+mae_PromSE<-MAE(tsTemp, fser)
+mape_PromSE<-MAPE(tsTemp, fser)
+smape_PromSE<-SMAPE(tsTemp, fser)
+mse_PromSE<-MSE(tsTemp, fser)
+rmse_PromSE<-RMSE(tsTemp, fser)
+medidas_PromSE<-matrix(c(mae_PromSE,mape_PromSE,smape_PromSE,mse_PromSE,rmse_PromSE))
+rownames(medidas_PromSE)<-c("MAE","MAPE","SMAPE","MSE","RMSE")
+colnames(medidas_PromSE)<-c("Suavizamiento Exponencial")
+df_medidas_PromSE<-as.data.frame(medidas_PromSE)
+tab_medidas_PromSE<-as.data.table(df_medidas_PromSE,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromSE)<-c("Medida","Suavizamiento Simple")
+ftab_medidas_PromSE<-format(tab_medidas_PromSS8, digits=5,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromSE,theme=tem))
+
+```
+
+### $\alpha = 0.5$
+```{r}
+estr5<-ses(tsTemp, h = 2, level = c(95, 95), initial = c("simple"),  alpha = 0.5, exponential = TRUE, beta = NULL)
+fser5<-estr5$fitted
+fser_ts5<-ts(fser5,start=1,frequency=1)
+fsetr_ts5<-rep(0,20)
+for(t in 3:20) fsetr_ts5[t]<-fser_ts5[t-2]
+for(t in 1:2) fsetr_ts5[t]<-NA
+yt5<-rep(0,20)
+for(t in 1:18) yt5[t]<- tsTemp[t]
+for(t in 19:20) yt5[t]<-NA
+yt_ts5<-ts(yt5,start=1,frequency=1)
+ts.plot(yt_ts5,fsetr_ts5,xlab=NULL,ylab=NULL, main = "Serie Suavizada Exponencialmente con \n Ajuste de Tendencia y alpha = 0.5",lty=c(1:2),col=c(1,2))
+legend(x="bottomright",legend=c("Obs","Suavizada"),col=c(1,2),lty=c(1,2))
+
+mae_PromSE5<-MAE(tsTemp, fser5)
+mape_PromSE5<-MAPE(tsTemp, fser5)
+smape_PromSE5<-SMAPE(tsTemp, fser5)
+mse_PromSE5<-MSE(tsTemp, fser5)
+rmse_PromSE5<-RMSE(tsTemp, fser5)
+medidas_PromSE5<-matrix(c(mae_PromSE5,mape_PromSE5,smape_PromSE5,mse_PromSE5,rmse_PromSE5))
+rownames(medidas_PromSE5)<-c("MAE","MAPE","SMAPE","MSE","RMSE")
+colnames(medidas_PromSE5)<-c("Suavizamiento Exponencial")
+df_medidas_PromSE5<-as.data.frame(medidas_PromSE5)
+tab_medidas_PromSE5<-as.data.table(df_medidas_PromSE5,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromSE5)<-c("Medida","Suavizamiento Simple")
+ftab_medidas_PromSE5<-format(tab_medidas_PromSE5, digits=5,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromSE5,theme=tem))
+
+
+```
+
+### $\alpha = 0.8$
+```{r}
+estr8<-ses(tsTemp, h = 2, level = c(95, 95), initial = c("simple"),  alpha = 0.8, exponential = TRUE, beta = NULL)
+fser8<-estr8$fitted
+fser_ts8<-ts(fser8,start=1,frequency=1)
+fsetr_ts8<-rep(0,20)
+for(t in 3:20) fsetr_ts8[t]<-fser_ts8[t-2]
+for(t in 1:2) fsetr_ts8[t]<-NA
+yt8<-rep(0,20)
+for(t in 1:18) yt8[t]<- tsTemp[t]
+for(t in 19:20) yt8[t]<-NA
+yt_ts8<-ts(yt8,start=1,frequency=1)
+ts.plot(yt_ts8,fsetr_ts8,xlab=NULL,ylab=NULL, main = "Serie Suavizada Exponencialmente con \n Ajuste de Tendencia y alpha = 0.8",lty=c(1:2),col=c(1,2))
+legend(x="bottomright",legend=c("Obs","Suavizada"),col=c(1,2),lty=c(1,2))
+
+mae_PromSE8<-MAE(tsTemp, fser8)
+mape_PromSE8<-MAPE(tsTemp, fser8)
+smape_PromSE8<-SMAPE(tsTemp, fser8)
+mse_PromSE8<-MSE(tsTemp, fser8)
+rmse_PromSE8<-RMSE(tsTemp, fser8)
+medidas_PromSE8<-matrix(c(mae_PromSE8,mape_PromSE8,smape_PromSE8,mse_PromSE8,rmse_PromSE8))
+rownames(medidas_PromSE8)<-c("MAE","MAPE","SMAPE","MSE","RMSE")
+colnames(medidas_PromSE8)<-c("Suavizamiento Exponencial")
+df_medidas_PromSE8<-as.data.frame(medidas_PromSE8)
+tab_medidas_PromSE8<-as.data.table(df_medidas_PromSE8,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromSE8)<-c("Medida","Suavizamiento Simple")
+ftab_medidas_PromSE8<-format(tab_medidas_PromSE8, digits=5,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromSE8,theme=tem))
+```
+
+
+
+
+
+El suavizado exponencial con ajuste de tendencia con $\alpha =$0.8 es el mejor debido a que se ajusta mejor y presenta errores más bajos. 
+
+## Holt 
+
+Este método suaviza de forma directa la tendencia y la pendiente
+
+
+```{r}
+esth<-holt(tsTemp, h = 10, level = c(0.95, 0.95), initial = c("simple"),  alpha = NULL, beta = NULL)
+fh<-esth$fitted
+fh_ts<-ts(fh,start=1,frequency=1)
+fht_ts<-rep(0,20)
+for(t in 3:20) fht_ts[t]<-fh_ts[t-2]
+for(t in 1:2) fht_ts[t]<-NA
+yt<-rep(0,20)
+for(t in 1:18) yt[t]<-tsTemp[t]
+for(t in 19:20) yt[t]<-NA
+yt_ts<-ts(yt,start=1,frequency=1)
+ts.plot(yt_ts,fht_ts,xlab=NULL,ylab=NULL, main = "Pronóstico de Holt",lty=c(1:2),col=c(1,2))
+legend(x="bottomright",legend=c("Obs","Holt"),col=c(1,2),lty=c(1,2))
+
+mae_PromFH<-MAE(tsTemp, fh)
+mape_PromFH<-MAPE(tsTemp, fh)
+smape_PromFH<-SMAPE(tsTemp, fh)
+mse_PromFH<-MSE(tsTemp, fh)
+rmse_PromFH<-RMSE(tsTemp, fh)
+medidas_PromFH<-matrix(c(mae_PromFH,mape_PromFH,smape_PromFH,mse_PromFH,rmse_PromFH))
+rownames(medidas_PromFH)<-c("MAE","MAPE","SMAPE","MSE","RMSE")
+colnames(medidas_PromFH)<-c("Holt")
+df_medidas_PromFH<-as.data.frame(medidas_PromFH)
+tab_medidas_PromFH<-as.data.table(df_medidas_PromFH,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromFH)<-c("Medida","Holt")
+ftab_medidas_PromFH<-format(tab_medidas_PromFH, digits=5,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromFH,theme=tem))
+```
+
+
+
+## Holt Winters Multiplicativo 
+
+```{r}
+est_hwm<-hw(tsTemp, h = 2, seasonal = c("multiplicative"),level = c(80, 95),initial = c("simple"), alpha = NULL, beta = NULL, gamma = NULL)
+fhwm<-est_hwm$fitted
+fhwm_ts<-ts(fhwm,start=c(2012,3),frequency=4)
+fhwmt_ts<-rep(0,32)
+for(t in 3:32) fhwmt_ts[t]<-fhwm_ts[t-2]
+for(t in 1:2) fhwmt_ts[t]<-NA
+yt<-rep(0,32)
+for(t in 1:30) yt[t]<-tsTemp[t]
+for(t in 31:32) yt[t]<-NA
+yt_ts<-ts(yt,start=c(2012,3),frequency=4)
+ts.plot(yt_ts,fhwmt_ts,xlab=NULL,ylab=NULL, main = "Pronóstico de Holt-Winters Multiplicativo",lty=c(1:2),col=c(1,2))
+legend(x="bottomright",legend=c("Obs","HoltWM"),col=c(1,2),lty=c(1,2))
+
+mae_PromFHWM<-MAE(tsTemp, fhwm)
+mape_PromFHWM<-MAPE(tsTemp, fhwm)
+smape_PromFHWM<-SMAPE(tsTemp, fhwm)
+mse_PromFHWM<-MSE(tsTemp, fhwm)
+rmse_PromFHWM<-RMSE(tsTemp, fhwm)
+medidas_PromFHWM<-matrix(c(mae_PromFHWM,mape_PromFHWM,smape_PromFHWM,mse_PromFHWM,rmse_PromFHWM))
+rownames(medidas_PromFHWM)<-c("MAE","MAPE","SMAPE","MSE","RMSE")
+colnames(medidas_PromFHWM)<-c("Holt Winters Multiplicativo" )
+df_medidas_PromFHWM<-as.data.frame(medidas_PromFHWM)
+tab_medidas_PromFHWM<-as.data.table(df_medidas_PromFHWM,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromFHWM)<-c("Medida","Holt Winters Multiplicativo")
+ftab_medidas_PromFHWM<-format(tab_medidas_PromFHWM, digits=5,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromFHWM,theme=tem))
+```
+
+
+## Holt Winters Aditivo
+
+```{r}
+y_ts1<-ts(data$meantemp,start=c(2012,3),frequency=4)
+est_hwa1<-hw(y_ts1, h = 2, seasonal = c("additive"),level = c(80, 95),initial = c("optimal"), alpha = NULL, beta = NULL, gamma = NULL)
+fhwa1<-est_hwa1$fitted
+fhwa_ts1<-ts(fhwa1,start=c(2012,3),frequency=4)
+fhwat_ts1<-rep(0,20)
+for(t in 3:20) fhwat_ts1[t]<-fhwa_ts1[t-2]
+for(t in 1:2) fhwat_ts1[t]<-NA
+yt1<-rep(0,20)
+for(t in 1:18) yt1[t]<-y_ts1[t]
+for(t in 19:20) yt1[t]<-NA
+yt_ts1<-ts(yt1,start=c(2012,3),frequency=4)
+ts.plot(yt_ts1,fhwat_ts1,xlab=NULL,ylab=NULL, main = "Pronóstico de Holt-Winters Aditivo",lty=c(1:2),col=c(1,2))
+legend(x="bottomright",legend=c("Obs","HoltWA"),col=c(1,2),lty=c(1,2))
+
+
+mae_PromFHWA<-MAE(tsTemp, fhwa1)
+mape_PromFHWA<-MAPE(tsTemp, fhwa1)
+mse_PromFHWA<-MSE(tsTemp, fhwa1)
+
+
+medidas_PromFHWA<-matrix(c(mae_PromFHWA,mape_PromFHWA,mse_PromFHWA))
+rownames(medidas_PromFHWA)<-c("MAE","MAPE","MSE")
+colnames(medidas_PromFHWA)<-c("Holt Winters Aditivo" )
+df_medidas_PromFHWA<-as.data.frame(medidas_PromFHWA)
+tab_medidas_PromFHWA<-as.data.table(df_medidas_PromFHWA,keep.rownames=TRUE, keep.colnames=FALSE)
+colnames(tab_medidas_PromFHWA)<-c("Medida","Holt Winters Aditivo")
+ftab_medidas_PromFHWA<-format(tab_medidas_PromFHWA, digits=3,scientific=TRUE,big.mark=",",decimal.mark=".",small.mark=",",justify="right")
+tem<-ttheme_minimal(base_colour = "black",base_size = 15,core=list(bg_params=list(fill=blues9,col=NA))) 
+grid.arrange(tableGrob(ftab_medidas_PromFHWA,theme=tem))
+```
+
+
+
+Holt winters aditivo es el mejor porque sus errores son menores
+
+# Conclusiones 
+
+## Pronostico
+```{r}
+pronostico <- forecast(modelo_ar1, h=50)
+autoplot(pronostico)
+predict(pronostico, h=50)
+```
+
+$$y_t=m_t+s_t+u_t$$
+
+$m_t:$ la mejor tendencia determinista basandonos en la que tiene menores erroes es el promedio ponderado w
+
+$s_t:$ el mejor componente estacional determinista basdandonos en los errores es el de holt winters aditivo
+
+$u_t:$ el proceso más optimo es el de ARIMA(2,1,2)
